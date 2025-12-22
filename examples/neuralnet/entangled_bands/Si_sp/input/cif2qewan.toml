@@ -1,0 +1,8 @@
+cif2cell_path = "cif2cell"
+pseudo_dir="/path/to/pslibrary.1.0.0/pbe/PSEUDOPOTENTIALS"
+pp_list_path = "/path/to/wannierinit/python/cif2qewan/pp_psl_rrkj.csv"
+scf_k_resolution = 0.1
+degauss = 0.01
+
+[pw2wan]
+write_unk = ".true."

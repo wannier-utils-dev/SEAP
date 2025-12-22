@@ -1,0 +1,8 @@
+cif2cell_path = "path/to/cif2cell_path"
+pseudo_dir = "/path/to/pseudo_dir"
+pp_list_path = "/path/to/pp_list"
+scf_k_resolution = 0.15
+degauss = 0.01
+
+[pw2wan]
+write_unk = ".true."
