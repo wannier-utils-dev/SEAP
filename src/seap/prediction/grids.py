@@ -1,6 +1,4 @@
-import math
 import numpy as np
-from itertools import product
 
 # This module provides functions for generating grids of points in Cartesian and polar coordinates.
 # The functions are used for scatter plotting and for generating data for machine learning models.
@@ -62,8 +60,9 @@ def cartesian_grid(n_div_list, size):
     steps = [float(size / n_div) for n_div in n_div_list]
     # Generate grid points for each axis
     xyz = [np.arange(-size/2.0 + step/2.0, size/2.0, step) for step in steps]
-    # Create a Cartesian product of the grid points
-    mesh = np.array(list(product(xyz[0], xyz[1], xyz[2])))
+    # Create a Cartesian product of the grid points using meshgrid
+    grids = np.meshgrid(xyz[0], xyz[1], xyz[2], indexing='ij')
+    mesh = np.stack(grids, axis=-1).reshape(-1, 3)
     return mesh
 
 def extract_inscribed_ball(pos_cart, size):
@@ -88,18 +87,12 @@ def extract_inscribed_ball(pos_cart, size):
     (array([[1.73205081, 0.95531662, 0.78539816]]), [1])
     """
     rmax = size / 2.0
-    pos_cart_in_ball = []
-    map_idx = []
-    # Iterate over each position and check if it lies within the sphere
-    for ir, pos in enumerate(pos_cart):
-        if np.all(pos == 0.0):
-            continue
-        norm = np.linalg.norm(pos)
-        if norm <= rmax:
-            pos_cart_in_ball.append(pos)
-            map_idx.append(ir)
+    norms = np.linalg.norm(pos_cart, axis=1)
+    mask = (norms > 0) & (norms <= rmax)
+    map_idx = np.where(mask)[0].tolist()
+    pos_cart_in_ball = pos_cart[mask]
     # Convert Cartesian coordinates to polar coordinates
-    pos_pol_in_ball = cartesian2polar(np.array(pos_cart_in_ball))
+    pos_pol_in_ball = cartesian2polar(pos_cart_in_ball)
     return pos_pol_in_ball, map_idx
 
 def cartesian2polar(pos_cart):
@@ -131,8 +124,7 @@ def cartesian2polar(pos_cart):
     # Calculate azimuthal angle
     phi_tmp = np.arctan2(pos_cart[:, 1], pos_cart[:, 0])
     # Convert azimuthal angle range from [-pi, pi] to [0, 2pi]
-    for i, phi in enumerate(phi_tmp):
-        pos_pol[i, 2] = math.fmod(phi + 2 * np.pi, 2 * np.pi)
+    pos_pol[:, 2] = np.fmod(phi_tmp + 2 * np.pi, 2 * np.pi)
     # Handle NaN values in polar angle
     nan_index = np.isnan(pos_pol[:, 1])
     pos_pol[nan_index, 1] = 0
