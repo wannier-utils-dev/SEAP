@@ -1,9 +1,26 @@
 import numpy as np
+
+# scipy changed the spherical-harmonic API in 1.15:
+#   sph_harm    (deprecated): sph_harm(m, n, theta, phi)  with
+#                             theta = azimuthal in [0, 2pi],
+#                             phi   = polar     in [0, pi].
+#   sph_harm_y  (>= 1.15):    sph_harm_y(n, m, theta, phi) with
+#                             theta = polar     in [0, pi],
+#                             phi   = azimuthal in [0, 2pi].
+# Both the (m, n) order *and* the meaning of theta/phi are inverted.
+# We expose a single helper _Ylm(l, m, phi_az, theta_pol) that always evaluates
+# Y_l^m(theta_pol, phi_az) with the standard physics convention.
 try:
-    from scipy.special import sph_harm_y as _sph_harm
+    from scipy.special import sph_harm_y as _scipy_sph
+    def _Ylm(l, m, phi_az, theta_pol):
+        # sph_harm_y(n=l, m=m, theta=theta_pol, phi=phi_az)
+        return _scipy_sph(l, m, theta_pol, phi_az)
 except ImportError:
-    # Fallback for older scipy versions
-    from scipy.special import sph_harm as _sph_harm
+    from scipy.special import sph_harm as _scipy_sph
+    def _Ylm(l, m, phi_az, theta_pol):
+        # sph_harm(m=m, n=l, theta=phi_az, phi=theta_pol)
+        return _scipy_sph(m, l, phi_az, theta_pol)
+
 
 def spherical_harmonics(l, m, theta, phi):
     """
@@ -28,13 +45,13 @@ def spherical_harmonics(l, m, theta, phi):
     """
     if m > 0:
         # For positive m, return the real part multiplied by sqrt(2) and (-1)^m
-        return np.sqrt(2) * (-1)**m * _sph_harm(m, l, phi, theta).real
+        return np.sqrt(2) * (-1)**m * _Ylm(l, m, phi, theta).real
     if m < 0:
         # For negative m, return the imaginary part multiplied by sqrt(2) and (-1)^m
-        return np.sqrt(2) * (-1)**m * _sph_harm(-m, l, phi, theta).imag
+        return np.sqrt(2) * (-1)**m * _Ylm(l, -m, phi, theta).imag
     else:
         # For m = 0, return the real part
-        return _sph_harm(m, l, phi, theta).real
+        return _Ylm(l, m, phi, theta).real
 
 def quantum_number(n):
     """
